@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         self.is_dark = False  # Start with light theme as requested
         self.tr = TRANSLATIONS[self.lang]
         
-        self.setWindowTitle("Media Converter Pro")
+        self.setWindowTitle("ComiConv")
         self.resize(750, 650)
         
         central = QWidget(self)

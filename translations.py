@@ -1,6 +1,6 @@
 TRANSLATIONS = {
     "ru": {
-        "app_title": "Пакетный Конвертер Комиксов",
+        "app_title": "ComiConv",
         "source_label": "Исходные файлы или папки с комиксами:",
         "btn_add_files": "Добавить файлы",
         "btn_add_folder": "Добавить папку",
@@ -32,7 +32,7 @@ TRANSLATIONS = {
         "theme_toggle": "Сменить тему"
     },
     "en": {
-        "app_title": "Batch Comic Converter",
+        "app_title": "ComiConv",
         "source_label": "Source files or folders with comics:",
         "btn_add_files": "Add Files",
         "btn_add_folder": "Add Folder",

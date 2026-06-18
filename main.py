@@ -205,6 +205,17 @@ class MainWindow(QMainWindow):
         self.btn_start.setText(self.tr["btn_start"])
         self.log_label.setText(self.tr["log_label"])
         self.btn_theme.setText(self.tr["theme_toggle"])
+        
+        # Tooltips
+        self.btn_add_files.setToolTip(self.tr["tt_add_files"])
+        self.btn_add_folder.setToolTip(self.tr["tt_add_folder"])
+        self.btn_clear.setToolTip(self.tr["tt_clear"])
+        self.source_list.setToolTip(self.tr["tt_source_list"])
+        self.chk_cbz.setToolTip(self.tr["tt_chk_cbz"])
+        self.chk_pdf.setToolTip(self.tr["tt_chk_pdf"])
+        self.btn_start.setToolTip(self.tr["tt_start"])
+        self.combo_lang.setToolTip(self.tr["tt_lang"])
+        self.btn_theme.setToolTip(self.tr["tt_theme"])
 
     def _change_lang(self, lang_code):
         self.lang = lang_code.lower()

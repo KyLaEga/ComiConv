@@ -34,6 +34,15 @@ TRANSLATIONS = {
         "tt_start": "Запустить процесс конвертации",
         "tt_lang": "Изменить язык интерфейса",
         "tt_theme": "Переключить светлую/темную тему",
+        "tt_help": "Справка по использованию",
+        "help_title": "Справка: Как использовать ComiConv",
+        "help_text": (
+            "<b>Добавить файлы</b>: Выберите один или несколько архивов (.zip, .cbz) для обработки.<br><br>"
+            "<b>Добавить папку</b>: Выберите папку. Программа автоматически найдет все картинки и вложенные архивы внутри неё.<br><br>"
+            "<b>Удаление</b>: Выберите элемент в списке и нажмите <b>Delete</b> (или дважды кликните по нему).<br><br>"
+            "<b>Форматы</b>: Укажите, куда сохранить готовые файлы. CBZ — формат для электронных читалок комиксов. PDF — универсальный документ.<br><br>"
+            "<i>Все выбранные файлы будут конвертированы в фоновом режиме без зависаний!</i>"
+        ),
         "dlg_select_archives": "Выберите архивы с комиксами",
         "dlg_select_folder": "Выберите папку с комиксами",
         "dlg_select_out_folder": "Выберите папку вывода",
@@ -75,6 +84,15 @@ TRANSLATIONS = {
         "tt_start": "Start the conversion process",
         "tt_lang": "Change interface language",
         "tt_theme": "Toggle light/dark theme",
+        "tt_help": "Usage Help",
+        "help_title": "Help: How to use ComiConv",
+        "help_text": (
+            "<b>Add Files</b>: Select one or more archives (.zip, .cbz) to process.<br><br>"
+            "<b>Add Folder</b>: Select a directory. The program will recursively find all images and archives inside it.<br><br>"
+            "<b>Removing</b>: Select an item in the list and press <b>Delete</b> (or double-click it).<br><br>"
+            "<b>Formats</b>: Choose where to save the files. CBZ is for comic readers. PDF is a universal document.<br><br>"
+            "<i>All selected files will be converted in the background without freezing!</i>"
+        ),
         "dlg_select_archives": "Select comic archives",
         "dlg_select_folder": "Select folder with comics",
         "dlg_select_out_folder": "Select output folder",

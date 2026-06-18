@@ -112,6 +112,11 @@ class MainWindow(QMainWindow):
         self.btn_theme.clicked.connect(self._toggle_theme)
         top_layout.addWidget(self.btn_theme)
         
+        self.btn_help = QPushButton()
+        self.btn_help.setObjectName("secondary")
+        self.btn_help.clicked.connect(self._show_help)
+        top_layout.addWidget(self.btn_help)
+        
         layout.addLayout(top_layout)
         
         # Source Selection
@@ -205,17 +210,7 @@ class MainWindow(QMainWindow):
         self.btn_start.setText(self.tr["btn_start"])
         self.log_label.setText(self.tr["log_label"])
         self.btn_theme.setText(self.tr["theme_toggle"])
-        
-        # Tooltips
-        self.btn_add_files.setToolTip(self.tr["tt_add_files"])
-        self.btn_add_folder.setToolTip(self.tr["tt_add_folder"])
-        self.btn_clear.setToolTip(self.tr["tt_clear"])
-        self.source_list.setToolTip(self.tr["tt_source_list"])
-        self.chk_cbz.setToolTip(self.tr["tt_chk_cbz"])
-        self.chk_pdf.setToolTip(self.tr["tt_chk_pdf"])
-        self.btn_start.setToolTip(self.tr["tt_start"])
-        self.combo_lang.setToolTip(self.tr["tt_lang"])
-        self.btn_theme.setToolTip(self.tr["tt_theme"])
+        self.btn_help.setText(self.tr.get("tt_help", "Help"))
 
     def _change_lang(self, lang_code):
         self.lang = lang_code.lower()
@@ -232,6 +227,14 @@ class MainWindow(QMainWindow):
         color = ThemeManager.colors()["text"]
         self.btn_cbz_browse.setIcon(ThemeManager.make_icon("folder", color))
         self.btn_pdf_browse.setIcon(ThemeManager.make_icon("folder", color))
+        self.btn_help.setIcon(ThemeManager.make_icon("info", color))
+
+    def _show_help(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle(self.tr["help_title"])
+        msg.setText(self.tr["help_text"])
+        msg.setIcon(QMessageBox.Information)
+        msg.exec()
 
     def _add_files(self):
         files, _ = QFileDialog.getOpenFileNames(

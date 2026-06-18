@@ -195,6 +195,11 @@ class ThemeManager:
         QListWidget { background-color: #1E1F22; border: 1px solid #4E5058; border-radius: 6px; color: #DBDEE1; outline: none; padding: 4px; }
         QListWidget::item { padding: 6px; border-radius: 4px; }
         QListWidget::item:selected { background-color: #3F4147; color: white; }
+        
+        QComboBox { background-color: #1E1F22; color: #FFFFFF; border: 1px solid #4E5058; border-radius: 6px; padding: 4px 10px; }
+        QComboBox:hover { border: 1px solid #5865F2; }
+        QComboBox::drop-down { border: none; width: 20px; }
+        QComboBox QAbstractItemView { background-color: #1E1F22; color: #FFFFFF; border: 1px solid #4E5058; border-radius: 6px; selection-background-color: #3F4147; outline: none; }
         """
         app.setStyleSheet(cls._load_stylesheet("dark", qss) + cls._typography_qss())
 
@@ -258,6 +263,11 @@ class ThemeManager:
         QListWidget { background-color: #FFFFFF; border: 1px solid #E3E5E8; border-radius: 6px; color: #313338; outline: none; padding: 4px; }
         QListWidget::item { padding: 6px; border-radius: 4px; }
         QListWidget::item:selected { background-color: #E3E5E8; color: #000000; }
+        
+        QComboBox { background-color: #FFFFFF; color: #313338; border: 1px solid #D4D7DC; border-radius: 6px; padding: 4px 10px; }
+        QComboBox:hover { border: 1px solid #5865F2; }
+        QComboBox::drop-down { border: none; width: 20px; }
+        QComboBox QAbstractItemView { background-color: #FFFFFF; color: #313338; border: 1px solid #D4D7DC; border-radius: 6px; selection-background-color: #E3E5E8; selection-color: #000000; outline: none; }
         """
         app.setStyleSheet(cls._load_stylesheet("light", qss) + cls._typography_qss())
 

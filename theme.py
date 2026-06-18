@@ -180,7 +180,6 @@ class ThemeManager:
         QCheckBox::indicator:checked { background: #5865F2; border: 2px solid #5865F2; image: url(none); }
         QCheckBox::indicator:checked:pressed { background: #4752C4; border-color: #4752C4; }
 
-        /* A neat trick to draw a tick mark in QSS using borders */
         QCheckBox::indicator:checked {
             background-color: #5865F2;
             border: 2px solid #5865F2;
@@ -198,3 +197,75 @@ class ThemeManager:
         QListWidget::item:selected { background-color: #3F4147; color: white; }
         """
         app.setStyleSheet(cls._load_stylesheet("dark", qss) + cls._typography_qss())
+
+    @classmethod
+    def apply_modern_light(cls, app: QApplication):
+        cls._active = cls.LIGHT
+        app.setStyle("Fusion")
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(cls.LIGHT["bg"]))
+        palette.setColor(QPalette.ColorRole.WindowText, QColor(cls.LIGHT["text"]))
+        palette.setColor(QPalette.ColorRole.Base, QColor(cls.LIGHT["surface"]))
+        palette.setColor(QPalette.ColorRole.Text, QColor(cls.LIGHT["text"]))
+        palette.setColor(QPalette.ColorRole.Button, QColor(cls.LIGHT["border"]))
+        palette.setColor(QPalette.ColorRole.ButtonText, QColor(cls.LIGHT["text"]))
+        app.setPalette(palette)
+
+        qss = """
+        QMainWindow, QWidget#sidebar { background-color: #F2F3F5; }
+        QWidget#card { background-color: #FFFFFF; border-radius: 8px; border: 1px solid #E3E5E8; }
+        QWidget#toolbar_flat { background-color: #FFFFFF; border-radius: 6px; border: 1px solid #E3E5E8; }
+        QWidget#controls_panel, QWidget#bottom_btns, QWidget#multi_slider_panel { background-color: #FFFFFF; border-top: 1px solid #E3E5E8; }
+        
+        QPushButton { background-color: #E3E5E8; color: #313338; border: none; border-radius: 6px; padding: 4px 10px; font-weight: 500; }
+        QPushButton:hover { background-color: #D4D7DC; }
+        QPushButton:pressed { background-color: #B5BAC1; }
+        QPushButton:disabled { background-color: #E3E5E8; color: #949BA4; }
+        
+        QPushButton#primary { background-color: #23A559; color: white; font-weight: bold; }
+        QPushButton#primary:hover { background-color: #1D8A4A; }
+        QPushButton#action { background-color: #5865F2; color: white; }
+        QPushButton#action:hover { background-color: #4752C4; }
+        
+        QPushButton#secondary { 
+            background-color: transparent; 
+            border: 1px solid #D4D7DC; 
+            border-radius: 6px; 
+            padding: 4px 10px; 
+            color: #313338; 
+        }
+        QPushButton#secondary:hover { background-color: #E3E5E8; border: 1px solid #5865F2; }
+        
+        QLineEdit { 
+            background-color: #FFFFFF; color: #313338; 
+            border: 1px solid #D4D7DC; border-radius: 6px; 
+            padding: 6px 10px; selection-background-color: #5865F2; selection-color: white;
+        }
+        QLineEdit:focus { border: 1px solid #5865F2; }
+        
+        QCheckBox { spacing: 8px; color: #313338; font-weight: 500; }
+        QCheckBox::indicator { width: 18px; height: 18px; border-radius: 4px; border: 2px solid #5865F2; background: transparent; }
+        QCheckBox::indicator:checked { background: #5865F2; border: 2px solid #5865F2; image: url(none); }
+        QCheckBox::indicator:checked:pressed { background: #4752C4; border-color: #4752C4; }
+        
+        QLabel { color: #313338; }
+        QLabel#status { color: #5C5E66; }
+        QLabel#stat_val { color: #23A559; font-weight: bold; }
+        
+        QProgressBar { border: none; background-color: #E3E5E8; border-radius: 4px; text-align: center; color: #313338; font-weight: bold; }
+        QProgressBar::chunk { background-color: #5865F2; border-radius: 4px; }
+        
+        QListWidget { background-color: #FFFFFF; border: 1px solid #E3E5E8; border-radius: 6px; color: #313338; outline: none; padding: 4px; }
+        QListWidget::item { padding: 6px; border-radius: 4px; }
+        QListWidget::item:selected { background-color: #E3E5E8; color: #000000; }
+        """
+        app.setStyleSheet(cls._load_stylesheet("light", qss) + cls._typography_qss())
+
+    @classmethod
+    def apply_system_theme(cls, app: QApplication):
+        app.setStyle("Fusion")
+        std = app.style().standardPalette()
+        app.setPalette(std)
+        app.setStyleSheet(cls._typography_qss())
+        window = std.color(QPalette.ColorRole.Window)
+        cls._active = cls.DARK if window.lightnessF() < 0.5 else cls.LIGHT

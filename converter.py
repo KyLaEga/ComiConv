@@ -2,12 +2,13 @@ import os
 import zipfile
 import shutil
 import re
+import tempfile
 from pathlib import Path
 from PIL import Image, ImageOps
 
 class OptimizedMediaConverter:
     def __init__(self):
-        self.valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.tiff')
+        self.valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.tiff', '.bmp', '.gif')
 
     @staticmethod
     def _natural_sort_key(s):
@@ -48,8 +49,7 @@ class OptimizedMediaConverter:
     def extract_and_prepare(self, source_path):
         source = Path(source_path)
         if source.suffix.lower() in ('.zip', '.cbz'):
-            temp_extract = Path(f"temp_extract_{source.stem}_{os.urandom(4).hex()}")
-            temp_extract.mkdir(parents=True, exist_ok=True)
+            temp_extract = Path(tempfile.mkdtemp(prefix=f"comiconv_{source.stem}_"))
             try:
                 with zipfile.ZipFile(source, 'r') as zip_ref:
                     zip_ref.extractall(temp_extract)
@@ -58,12 +58,12 @@ class OptimizedMediaConverter:
                 raise ValueError(f"Архив поврежден: {source.name}")
                 
             images = [p for p in temp_extract.rglob('*') if p.is_file() and p.suffix.lower() in self.valid_extensions]
-            images.sort(key=lambda x: self._natural_sort_key(x.name))
+            images.sort(key=lambda x: self._natural_sort_key(str(x.relative_to(temp_extract))))
             return images, temp_extract
             
         elif source.is_dir():
             images = [p for p in source.rglob('*') if p.is_file() and p.suffix.lower() in self.valid_extensions]
-            images.sort(key=lambda x: self._natural_sort_key(x.name))
+            images.sort(key=lambda x: self._natural_sort_key(str(x.relative_to(source))))
             return images, None
         else:
             raise ValueError(f"Неизвестный тип источника: {source.name}")

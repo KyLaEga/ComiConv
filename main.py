@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QFileDialog, QCheckBox,
     QProgressBar, QListWidget, QMessageBox, QComboBox
 )
+from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtCore import Qt, QThread, Signal
 
 from theme import ThemeManager
@@ -84,6 +85,7 @@ class MainWindow(QMainWindow):
         self.tr = TRANSLATIONS[self.lang]
         
         self.setWindowTitle("ComiConv")
+        self.setWindowIcon(ThemeManager.make_icon("book", "#5865F2"))
         self.resize(750, 650)
         
         central = QWidget(self)
@@ -119,6 +121,9 @@ class MainWindow(QMainWindow):
         
         self.source_list = QListWidget()
         self.source_list.setFixedHeight(100)
+        self.source_list.itemDoubleClicked.connect(lambda item: self._remove_selected_source())
+        QShortcut(QKeySequence("Delete"), self.source_list, self._remove_selected_source)
+        QShortcut(QKeySequence("Backspace"), self.source_list, self._remove_selected_source)
         layout.addWidget(self.source_list)
         
         btn_layout = QHBoxLayout()
@@ -235,6 +240,10 @@ class MainWindow(QMainWindow):
             if self.source_list.item(i).text() == path:
                 return
         self.source_list.addItem(path)
+
+    def _remove_selected_source(self):
+        for item in self.source_list.selectedItems():
+            self.source_list.takeItem(self.source_list.row(item))
 
     def _create_folder_picker(self, attr_prefix):
         widget = QWidget()

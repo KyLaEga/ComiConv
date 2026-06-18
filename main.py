@@ -126,6 +126,7 @@ class MainWindow(QMainWindow):
         
         self.source_list = QListWidget()
         self.source_list.setFixedHeight(100)
+        self.source_list.setSelectionMode(QListWidget.ExtendedSelection)
         self.source_list.itemDoubleClicked.connect(lambda item: self._remove_selected_source())
         QShortcut(QKeySequence("Delete"), self.source_list, self._remove_selected_source)
         QShortcut(QKeySequence("Backspace"), self.source_list, self._remove_selected_source)
@@ -136,17 +137,21 @@ class MainWindow(QMainWindow):
         self.btn_add_files.setObjectName("secondary")
         self.btn_add_folder = QPushButton()
         self.btn_add_folder.setObjectName("secondary")
+        self.btn_remove_selected = QPushButton()
+        self.btn_remove_selected.setObjectName("secondary")
         self.btn_clear = QPushButton()
         self.btn_clear.setObjectName("secondary")
         
         btn_layout.addWidget(self.btn_add_files)
         btn_layout.addWidget(self.btn_add_folder)
+        btn_layout.addWidget(self.btn_remove_selected)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_clear)
         layout.addLayout(btn_layout)
         
         self.btn_add_files.clicked.connect(self._add_files)
         self.btn_add_folder.clicked.connect(self._add_folder)
+        self.btn_remove_selected.clicked.connect(self._remove_selected_source)
         self.btn_clear.clicked.connect(self.source_list.clear)
         
         # Checkboxes
@@ -200,6 +205,7 @@ class MainWindow(QMainWindow):
         self.source_label.setText(self.tr["source_label"])
         self.btn_add_files.setText(self.tr["btn_add_files"])
         self.btn_add_folder.setText(self.tr["btn_add_folder"])
+        self.btn_remove_selected.setText(self.tr["btn_remove_selected"])
         self.btn_clear.setText(self.tr["btn_clear"])
         self.chk_cbz.setText(self.tr["chk_cbz"])
         self.chk_pdf.setText(self.tr["chk_pdf"])
@@ -210,7 +216,7 @@ class MainWindow(QMainWindow):
         self.btn_start.setText(self.tr["btn_start"])
         self.log_label.setText(self.tr["log_label"])
         self.btn_theme.setText(self.tr["theme_toggle"])
-        self.btn_help.setText(self.tr.get("tt_help", "Help"))
+        self.btn_help.setText(self.tr["btn_help"])
 
     def _change_lang(self, lang_code):
         self.lang = lang_code.lower()

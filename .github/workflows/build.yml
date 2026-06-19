@@ -46,12 +46,28 @@ jobs:
     - name: Build executable with PyInstaller (macOS)
       if: runner.os == 'macOS'
       run: |
-        pyinstaller --noconfirm --onedir --windowed --name "ComiConv" main.py
+        pyinstaller --noconfirm --onedir --windowed \
+          --exclude-module PySide6.QtNetwork \
+          --exclude-module PySide6.QtQml \
+          --exclude-module PySide6.QtQuick \
+          --exclude-module PySide6.QtSql \
+          --exclude-module PySide6.QtTest \
+          --exclude-module PySide6.QtWebEngineCore \
+          --exclude-module PySide6.QtWebEngineWidgets \
+          --name "ComiConv" main.py
         
     - name: Build executable with PyInstaller (Windows/Linux)
       if: runner.os != 'macOS'
       run: |
-        pyinstaller --noconfirm --onefile --windowed --name "ComiConv" main.py
+        pyinstaller --noconfirm --onefile --windowed \
+          --exclude-module PySide6.QtNetwork \
+          --exclude-module PySide6.QtQml \
+          --exclude-module PySide6.QtQuick \
+          --exclude-module PySide6.QtSql \
+          --exclude-module PySide6.QtTest \
+          --exclude-module PySide6.QtWebEngineCore \
+          --exclude-module PySide6.QtWebEngineWidgets \
+          --name "ComiConv" main.py
         
     - name: Package macOS App
       if: runner.os == 'macOS'

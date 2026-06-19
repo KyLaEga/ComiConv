@@ -46,14 +46,95 @@ jobs:
     - name: Build executable with PyInstaller (macOS)
       if: runner.os == 'macOS'
       run: |
-        pyinstaller --noconfirm --onedir --windowed --exclude-module PySide6.QtNetwork --exclude-module PySide6.QtQml --exclude-module PySide6.QtQuick --exclude-module PySide6.QtSql --exclude-module PySide6.QtTest --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --name "ComiConv" main.py
+        pyinstaller --noconfirm --onedir --windowed --name "ComiConv" main.py
         
     - name: Build executable with PyInstaller (Windows/Linux)
       if: runner.os != 'macOS'
       shell: bash
       run: |
-        pyinstaller --noconfirm --onefile --windowed --exclude-module PySide6.QtNetwork --exclude-module PySide6.QtQml --exclude-module PySide6.QtQuick --exclude-module PySide6.QtSql --exclude-module PySide6.QtTest --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --name "ComiConv" main.py
+        pyinstaller --noconfirm --onefile --windowed --name "ComiConv" main.py
+
+    - name: Strip macOS App Bundle
+      if: runner.os == 'macOS'
+      run: |
+        APP="dist/ComiConv.app/Contents"
+        FRAMEWORKS="$APP/Frameworks"
         
+        echo "=== Size BEFORE cleanup ==="
+        du -sh dist/ComiConv.app
+        
+        # Remove entire unused Qt frameworks
+        cd "$FRAMEWORKS"
+        KEEP="QtCore QtGui QtWidgets QtDBus QtPrintSupport"
+        for fw in Qt*.framework; do
+          NAME="${fw%.framework}"
+          if ! echo "$KEEP" | grep -qw "$NAME"; then
+            echo "Removing framework: $fw"
+            rm -rf "$fw"
+          fi
+        done
+        
+        # Remove unused Qt plugins (keep only platform, styles, imageformats)
+        cd "$APP/Resources"
+        if [ -d "qt_plugins" ]; then
+          PLUGIN_DIR="qt_plugins"
+        else
+          PLUGIN_DIR="../MacOS/PySide6/Qt/plugins"
+        fi
+        
+        if [ -d "$PLUGIN_DIR" ]; then
+          cd "$PLUGIN_DIR"
+          KEEP_PLUGINS="platforms styles imageformats"
+          for dir in */; do
+            DIRNAME="${dir%/}"
+            if ! echo "$KEEP_PLUGINS" | grep -qw "$DIRNAME"; then
+              echo "Removing plugin dir: $DIRNAME"
+              rm -rf "$DIRNAME"
+            fi
+          done
+        fi
+        
+        # Remove PySide6 Python modules we don't use
+        cd "$APP/MacOS"
+        if [ -d "PySide6" ]; then
+          cd "PySide6"
+          # Remove unused Qt frameworks inside PySide6 too
+          if [ -d "Qt/lib" ]; then
+            cd "Qt/lib"
+            for fw in Qt*.framework; do
+              NAME="${fw%.framework}"
+              if ! echo "$KEEP" | grep -qw "$NAME"; then
+                echo "Removing PySide6/Qt/lib/$fw"
+                rm -rf "$fw"
+              fi
+            done
+            cd ../..
+          fi
+          # Remove unused .abi3.so Python bindings
+          for so in Qt*.abi3.so; do
+            NAME=$(echo "$so" | sed 's/\.abi3\.so//')
+            if ! echo "$KEEP" | grep -qw "$NAME"; then
+              echo "Removing binding: $so"
+              rm -f "$so"
+            fi
+          done
+          # Remove Qt plugins inside PySide6 too
+          if [ -d "Qt/plugins" ]; then
+            cd "Qt/plugins"
+            for dir in */; do
+              DIRNAME="${dir%/}"
+              if ! echo "$KEEP_PLUGINS" | grep -qw "$DIRNAME"; then
+                echo "Removing PySide6 plugin: $DIRNAME"
+                rm -rf "$DIRNAME"
+              fi
+            done
+          fi
+        fi
+        
+        cd "$OLDPWD"
+        echo "=== Size AFTER cleanup ==="
+        du -sh dist/ComiConv.app
+
     - name: Package macOS App
       if: runner.os == 'macOS'
       run: |
@@ -75,7 +156,7 @@ jobs:
         path: dist/ComiConv*
 
   release:
-    name: Create Draft Release
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -89,9 +170,9 @@ jobs:
         path: artifacts
 
     - name: Display downloaded artifacts
-      run: ls -R artifacts
+      run: ls -lhR artifacts
       
-    - name: Create Draft Release
+    - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         name: "ComiConv Latest Build"

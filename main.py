@@ -243,7 +243,7 @@ class MainWindow(QMainWindow):
 
     def _add_files(self):
         files, _ = QFileDialog.getOpenFileNames(
-            self, self.tr["dlg_select_archives"], "", "Archives (*.zip *.cbz)"
+            self, self.tr["dlg_select_archives"], "", "Comics (*.zip *.cbz *.pdf)"
         )
         if files:
             for f in files:

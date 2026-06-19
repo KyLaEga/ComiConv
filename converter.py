@@ -2,6 +2,7 @@ import zipfile
 import shutil
 import re
 import tempfile
+import fitz
 from pathlib import Path
 from PIL import Image, ImageOps
 
@@ -24,12 +25,12 @@ class OptimizedMediaConverter:
                 continue
                 
             if source.is_file():
-                if source.suffix.lower() in ('.zip', '.cbz'):
+                if source.suffix.lower() in ('.zip', '.cbz', '.pdf'):
                     targets.add(source)
             elif source.is_dir():
-                # Check all files for zip/cbz
+                # Check all files for zip/cbz/pdf
                 for arch_file in source.rglob('*'):
-                    if arch_file.is_file() and arch_file.suffix.lower() in ('.zip', '.cbz'):
+                    if arch_file.is_file() and arch_file.suffix.lower() in ('.zip', '.cbz', '.pdf'):
                         targets.add(arch_file)
                         
                 # Check directories for images (including the source dir itself)
@@ -55,6 +56,27 @@ class OptimizedMediaConverter:
                 shutil.rmtree(temp_extract, ignore_errors=True)
                 raise ValueError(f"Архив поврежден: {source.name}")
                 
+            images = [p for p in temp_extract.rglob('*') if p.is_file() and p.suffix.lower() in self.valid_extensions]
+            images.sort(key=lambda x: self._natural_sort_key(str(x.relative_to(temp_extract))))
+            return images, temp_extract
+
+        elif source.suffix.lower() == '.pdf':
+            temp_extract = Path(tempfile.mkdtemp(prefix=f"comiconv_{source.stem}_"))
+            try:
+                doc = fitz.open(source)
+                for page_num in range(len(doc)):
+                    page = doc.load_page(page_num)
+                    # Use a moderate zoom for good reading quality (e.g., 2.0 = 144 DPI)
+                    zoom = 2.0
+                    mat = fitz.Matrix(zoom, zoom)
+                    pix = page.get_pixmap(matrix=mat, alpha=False)
+                    out_path = temp_extract / f"page_{page_num + 1:04d}.png"
+                    pix.save(str(out_path))
+                doc.close()
+            except Exception as e:
+                shutil.rmtree(temp_extract, ignore_errors=True)
+                raise ValueError(f"Ошибка при чтении PDF {source.name}: {e}")
+
             images = [p for p in temp_extract.rglob('*') if p.is_file() and p.suffix.lower() in self.valid_extensions]
             images.sort(key=lambda x: self._natural_sort_key(str(x.relative_to(temp_extract))))
             return images, temp_extract

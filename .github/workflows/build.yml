@@ -96,7 +96,7 @@ jobs:
       with:
         name: "ComiConv Latest Build"
         tag_name: "v1.0.${{ github.run_number }}"
-        draft: true
+        draft: false
         prerelease: false
         generate_release_notes: true
         files: |

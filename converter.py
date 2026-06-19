@@ -4,7 +4,7 @@ import re
 import tempfile
 import fitz
 from pathlib import Path
-from PIL import Image, ImageOps
+
 
 class OptimizedMediaConverter:
     def __init__(self):
@@ -108,39 +108,22 @@ class OptimizedMediaConverter:
         
         return cbz_path
 
-    def _pdf_image_generator(self, image_paths):
-        for img_path in image_paths[1:]:
-            with Image.open(img_path) as img:
-                img = ImageOps.exif_transpose(img)
-                clean_img = Image.new("RGB", img.size, (255, 255, 255))
-                if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
-                    alpha_img = img.convert('RGBA')
-                    clean_img.paste(alpha_img, mask=alpha_img.split()[3])
-                else:
-                    clean_img.paste(img.convert('RGB'))
-                yield clean_img
-
     def to_pdf(self, images_paths, filename, output_dir):
         pdf_path = Path(output_dir) / f"{filename}.pdf"
             
         if not images_paths:
             raise FileNotFoundError("Изображения не найдены.")
 
-        with Image.open(images_paths[0]) as first_img:
-            first_img = ImageOps.exif_transpose(first_img)
-            clean_first = Image.new("RGB", first_img.size, (255, 255, 255))
-            if first_img.mode in ('RGBA', 'LA') or (first_img.mode == 'P' and 'transparency' in first_img.info):
-                alpha_first = first_img.convert('RGBA')
-                clean_first.paste(alpha_first, mask=alpha_first.split()[3])
-            else:
-                clean_first.paste(first_img.convert('RGB'))
+        doc = fitz.open()
+        for img_path in images_paths:
+            img_doc = fitz.open(img_path)
+            pdf_bytes = img_doc.convert_to_pdf()
+            img_doc.close()
             
-            clean_first.save(
-                pdf_path, 
-                format="PDF",
-                save_all=True, 
-                append_images=self._pdf_image_generator(images_paths),
-                resolution=100.0 
-            )
-
+            page_doc = fitz.open("pdf", pdf_bytes)
+            doc.insert_pdf(page_doc)
+            page_doc.close()
+            
+        doc.save(pdf_path)
+        doc.close()
         return pdf_path

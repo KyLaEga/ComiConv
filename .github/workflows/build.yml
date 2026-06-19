@@ -46,7 +46,7 @@ jobs:
     - name: Build executable with PyInstaller (macOS)
       if: runner.os == 'macOS'
       run: |
-        pyinstaller --noconfirm --onedir --windowed --name "ComiConv" main.py
+        pyinstaller --noconfirm --onedir --windowed --noupx --name "ComiConv" main.py
         
     - name: Build executable with PyInstaller (Windows/Linux)
       if: runner.os != 'macOS'
@@ -66,14 +66,11 @@ jobs:
         find "$APP" -maxdepth 5 -name "*.framework" -type d | head -30
         find "$APP" -maxdepth 5 -name "*.abi3.so" -type f | head -30
         
-        KEEP_FW="QtCore QtGui QtWidgets QtDBus QtPrintSupport QtSvg"
-        KEEP_PLUGINS="platforms styles imageformats"
-        
         # Remove unused Qt frameworks wherever they are
         find "$APP" -maxdepth 8 -name "Qt*.framework" -type d | while read fw; do
           NAME=$(basename "$fw" .framework)
           MATCH=false
-          for k in $KEEP_FW; do
+          for k in QtCore QtGui QtWidgets QtDBus QtPrintSupport QtSvg; do
             [ "$NAME" = "$k" ] && MATCH=true && break
           done
           if [ "$MATCH" = "false" ]; then
@@ -86,7 +83,7 @@ jobs:
         find "$APP" -maxdepth 8 -name "Qt*.abi3.so" -type f | while read so; do
           NAME=$(basename "$so" .abi3.so)
           MATCH=false
-          for k in $KEEP_FW; do
+          for k in QtCore QtGui QtWidgets QtDBus QtPrintSupport QtSvg; do
             [ "$NAME" = "$k" ] && MATCH=true && break
           done
           if [ "$MATCH" = "false" ]; then
@@ -101,7 +98,7 @@ jobs:
             [ ! -d "$sub" ] && continue
             DIRNAME=$(basename "$sub")
             MATCH=false
-            for k in $KEEP_PLUGINS; do
+            for k in platforms styles imageformats; do
               [ "$DIRNAME" = "$k" ] && MATCH=true && break
             done
             if [ "$MATCH" = "false" ]; then
@@ -118,7 +115,7 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         cd dist
-        zip -r ../ComiConv-macOS.zip ComiConv.app
+        zip -ry ../ComiConv-macOS.zip ComiConv.app
         
     - name: Upload macOS Artifact
       if: runner.os == 'macOS'

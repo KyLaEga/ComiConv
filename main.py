@@ -45,6 +45,17 @@ class ConversionWorker(QThread):
             for i, target in enumerate(targets):
                 self.log.emit(self.tr["status_processing"].format(current=i+1, total=total, name=target.name))
                 
+                is_pdf_source = target.is_file() and target.suffix.lower() == '.pdf'
+                is_cbz_zip_source = target.is_file() and target.suffix.lower() in ('.cbz', '.zip')
+                
+                needs_cbz = self.make_cbz and self.cbz_out and not is_cbz_zip_source
+                needs_pdf = self.make_pdf and self.pdf_out and not is_pdf_source
+                
+                if not needs_cbz and not needs_pdf:
+                    self.log.emit(self.tr["status_skip_all_same"].format(name=target.name))
+                    self.progress.emit(int(((i + 1) / total) * 100))
+                    continue
+
                 temp_dir = None
                 try:
                     images, temp_dir = self.converter.extract_and_prepare(target)
@@ -54,14 +65,18 @@ class ConversionWorker(QThread):
                         
                     filename = target.stem if target.is_file() else target.name
                     
-                    if self.make_cbz and self.cbz_out:
+                    if needs_cbz:
                         base = temp_dir if temp_dir else target
                         cbz_path = self.converter.to_cbz(images, filename, self.cbz_out, base_dir=base)
                         self.log.emit(self.tr["status_success_cbz"].format(name=cbz_path.name))
+                    elif self.make_cbz and self.cbz_out:
+                        self.log.emit(self.tr["status_skip_format"].format(fmt="CBZ", name=target.name))
                         
-                    if self.make_pdf and self.pdf_out:
+                    if needs_pdf:
                         pdf_path = self.converter.to_pdf(images, filename, self.pdf_out)
                         self.log.emit(self.tr["status_success_pdf"].format(name=pdf_path.name))
+                    elif self.make_pdf and self.pdf_out:
+                        self.log.emit(self.tr["status_skip_format"].format(fmt="PDF", name=target.name))
                         
                 except Exception as e:
                     self.log.emit(self.tr["status_error_target"].format(name=target.name, error=str(e)))

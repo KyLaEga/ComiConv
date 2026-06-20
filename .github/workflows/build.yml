@@ -140,6 +140,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Read Version
+      id: get_version
+      run: |
+        if [ -f version.txt ]; then
+          echo "VERSION=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_ENV
+        else
+          echo "VERSION=1.0" >> $GITHUB_ENV
+        fi
+      
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
@@ -151,8 +160,8 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        name: "ComiConv Latest Build"
-        tag_name: "v1.0.${{ github.run_number }}"
+        name: "ComiConv ${{ env.VERSION }}.${{ github.run_number }}"
+        tag_name: "v${{ env.VERSION }}.${{ github.run_number }}"
         draft: false
         prerelease: false
         generate_release_notes: true

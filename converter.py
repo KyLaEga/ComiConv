@@ -3,6 +3,7 @@ import shutil
 import re
 import tempfile
 import fitz
+import os
 from pathlib import Path
 
 
@@ -43,7 +44,6 @@ class OptimizedMediaConverter:
                 if source.suffix.lower() in ('.zip', '.cbz', '.pdf'):
                     targets.add(source)
             elif source.is_dir():
-                import os
                 for root, dirs, files in os.walk(source):
                     if cancel_check and cancel_check():
                         raise InterruptedError("Операция прервана")

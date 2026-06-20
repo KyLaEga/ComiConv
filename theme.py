@@ -8,9 +8,6 @@ from PySide6.QtCore import QByteArray
 from PySide6 import QtSvg  # noqa: F401
 
 class ThemeManager:
-    _ICONS_SUBDIR = os.path.join("assets", "icons")
-    _THEMES_SUBDIR = os.path.join("assets", "themes")
-
     DARK = {
         "bg": "#1E1F22",
         "surface": "#2B2D31",
@@ -74,50 +71,6 @@ class ThemeManager:
     @classmethod
     def colors(cls) -> dict:
         return cls._active
-
-    @staticmethod
-    def _resource_root() -> Path:
-        meipass = getattr(sys, "_MEIPASS", None)
-        if meipass:
-            return Path(meipass)
-        if getattr(sys, "frozen", False):
-            exe_dir = Path(sys.executable).resolve().parent
-            if sys.platform == "darwin":
-                mac_resources = exe_dir.parent / "Resources"
-                if mac_resources.exists():
-                    return mac_resources
-            return exe_dir
-        return Path(__file__).resolve().parent
-
-    @classmethod
-    def asset_path(cls, relative: str) -> str:
-        return str(cls._resource_root() / relative)
-
-    @classmethod
-    def icon_path(cls, filename: str) -> str:
-        return str(cls._resource_root() / cls._ICONS_SUBDIR / filename)
-
-    @classmethod
-    def load_icon(cls, filename: str) -> QIcon:
-        path = cls.icon_path(filename)
-        if os.path.exists(path):
-            icon = QIcon(path)
-            if not icon.isNull():
-                return icon
-        print(f"ThemeManager: icon asset missing or invalid: {path}")
-        return QIcon()
-
-    @classmethod
-    def _load_stylesheet(cls, theme_name: str, fallback_qss: str) -> str:
-        qss_path = cls._resource_root() / cls._THEMES_SUBDIR / f"{theme_name}.qss"
-        try:
-            if qss_path.is_file():
-                text = qss_path.read_text(encoding="utf-8")
-                if text.strip():
-                    return text
-        except OSError as exc:
-            print(f"ThemeManager: failed to read {qss_path}: {exc}")
-        return fallback_qss
 
     @classmethod
     def _typography_qss(cls) -> str:
@@ -203,7 +156,7 @@ class ThemeManager:
         QComboBox::drop-down { border: none; width: 20px; }
         QComboBox QAbstractItemView { background-color: #1E1F22; color: #FFFFFF; border: 1px solid #4E5058; border-radius: 6px; selection-background-color: #3F4147; outline: none; }
         """
-        app.setStyleSheet(cls._load_stylesheet("dark", qss) + cls._typography_qss())
+        app.setStyleSheet(qss + cls._typography_qss())
 
     @classmethod
     def apply_modern_light(cls, app: QApplication):
@@ -271,7 +224,7 @@ class ThemeManager:
         QComboBox::drop-down { border: none; width: 20px; }
         QComboBox QAbstractItemView { background-color: #FFFFFF; color: #313338; border: 1px solid #D4D7DC; border-radius: 6px; selection-background-color: #E3E5E8; selection-color: #000000; outline: none; }
         """
-        app.setStyleSheet(cls._load_stylesheet("light", qss) + cls._typography_qss())
+        app.setStyleSheet(qss + cls._typography_qss())
 
     @classmethod
     def apply_system_theme(cls, app: QApplication):

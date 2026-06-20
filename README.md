@@ -30,8 +30,8 @@ You can download the latest built files in the **[Releases](https://github.com/K
 
 ### 🚀 Local Usage (For Developers)
 ```bash
-git clone https://github.com/KyLaEga/MediaConverterPro.git
-cd MediaConverterPro
+git clone https://github.com/KyLaEga/ComiConv.git
+cd ComiConv
 ./start.sh
 ```
 
@@ -61,7 +61,7 @@ cd MediaConverterPro
 
 ### 🚀 Запуск из исходников (Для Разработчиков)
 ```bash
-git clone https://github.com/KyLaEga/MediaConverterPro.git
-cd MediaConverterPro
+git clone https://github.com/KyLaEga/ComiConv.git
+cd ComiConv
 ./start.sh
 ```

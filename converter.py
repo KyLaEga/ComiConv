@@ -107,8 +107,8 @@ class OptimizedMediaConverter:
                         if cancel_check and cancel_check():
                             raise InterruptedError("Операция прервана")
                         page = doc.load_page(page_num)
-                        # Use a moderate zoom for good reading quality (e.g., 2.0 = 144 DPI)
-                        zoom = 2.0
+                        # Use a moderate zoom for good reading quality but optimized for resource usage
+                        zoom = 1.5
                         mat = fitz.Matrix(zoom, zoom)
                         pix = page.get_pixmap(matrix=mat, alpha=False)
                         out_path = temp_extract / f"page_{page_num + 1:04d}.jpg"

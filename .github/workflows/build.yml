@@ -70,7 +70,7 @@ jobs:
         find "$APP" -maxdepth 8 -name "Qt*.framework" -type d | while read fw; do
           NAME=$(basename "$fw" .framework)
           MATCH=false
-          for k in QtCore QtGui QtWidgets QtDBus QtPrintSupport QtSvg; do
+          for k in QtCore QtGui QtWidgets QtSvg; do
             [ "$NAME" = "$k" ] && MATCH=true && break
           done
           if [ "$MATCH" = "false" ]; then
@@ -83,7 +83,7 @@ jobs:
         find "$APP" -maxdepth 8 -name "Qt*.abi3.so" -type f | while read so; do
           NAME=$(basename "$so" .abi3.so)
           MATCH=false
-          for k in QtCore QtGui QtWidgets QtDBus QtPrintSupport QtSvg; do
+          for k in QtCore QtGui QtWidgets QtSvg; do
             [ "$NAME" = "$k" ] && MATCH=true && break
           done
           if [ "$MATCH" = "false" ]; then

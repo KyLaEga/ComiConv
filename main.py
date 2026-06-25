@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -75,7 +76,7 @@ class ConversionWorker(QThread):
                         filename = target.stem if target.is_file() else target.name
 
                         if needs_cbz:
-                            base = temp_dir if temp_dir else target
+                            base = temp_dir if temp_dir else (target if isinstance(target, Path) else None)
                             cbz_path = self.converter.to_cbz(images, filename, self.cbz_out, base_dir=base, cancel_check=self.isInterruptionRequested)
                             self.log.emit(self.tr["status_success_cbz"].format(name=cbz_path.name))
                         elif self.make_cbz and self.cbz_out:
@@ -88,7 +89,7 @@ class ConversionWorker(QThread):
                             self.log.emit(self.tr["status_skip_format"].format(fmt="PDF", name=target.name))
 
                         if needs_zip:
-                            base = temp_dir if temp_dir else target
+                            base = temp_dir if temp_dir else (target if isinstance(target, Path) else None)
                             zip_path = self.converter.to_zip(images, filename, self.zip_out, base_dir=base, cancel_check=self.isInterruptionRequested)
                             self.log.emit(self.tr["status_success_zip"].format(name=zip_path.name))
                         elif self.make_zip and self.zip_out:
@@ -296,7 +297,8 @@ class MainWindow(QMainWindow):
 
     def _add_files(self):
         files, _ = QFileDialog.getOpenFileNames(
-            self, self.tr["dlg_select_archives"], "", "Comics (*.zip *.cbz *.pdf)"
+            self, self.tr["dlg_select_archives"], "",
+            "Comics (*.zip *.cbz *.pdf *.jpg *.jpeg *.png *.webp *.tiff *.bmp *.gif)"
         )
         if files:
             for f in files:

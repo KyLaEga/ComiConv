@@ -35,7 +35,8 @@ TRANSLATIONS = {
         "status_done": "Конвертация завершена успешно!",
         "help_title": "Справка: Как использовать ComiConv",
         "help_text": (
-            "<b>Добавить файлы</b>: Выберите один или несколько файлов (.zip, .cbz, .pdf) для обработки.<br><br>"
+            "<b>Добавить файлы</b>: Выберите один или несколько файлов (.zip, .cbz, .pdf) или отдельные картинки "
+            "(.jpg, .png, .webp и др.). Картинки из одной папки объединяются в один документ.<br><br>"
             "<b>Добавить папку</b>: Выберите папку. Программа автоматически найдет все картинки и вложенные архивы внутри неё.<br><br>"
             "<b>Удаление</b>: Выберите элемент в списке и нажмите <b>Delete</b> (или дважды кликните по нему).<br><br>"
             "<b>Форматы</b>: Укажите, куда сохранить готовые файлы. CBZ — формат для электронных читалок комиксов. PDF — универсальный документ. "
@@ -87,7 +88,8 @@ TRANSLATIONS = {
         "status_done": "Conversion completed successfully!",
         "help_title": "Help: How to use ComiConv",
         "help_text": (
-            "<b>Add Files</b>: Select one or more files (.zip, .cbz, .pdf) to process.<br><br>"
+            "<b>Add Files</b>: Select one or more files (.zip, .cbz, .pdf) or individual images "
+            "(.jpg, .png, .webp, etc.). Images from the same folder are combined into one document.<br><br>"
             "<b>Add Folder</b>: Select a directory. The program will recursively find all images and archives inside it.<br><br>"
             "<b>Removing</b>: Select an item in the list and press <b>Delete</b> (or double-click it).<br><br>"
             "<b>Formats</b>: Choose where to save the files. CBZ is for comic readers. PDF is a universal document. "

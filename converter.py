@@ -2,9 +2,33 @@ import zipfile
 import shutil
 import re
 import tempfile
+import io
 import fitz
 import os
 from pathlib import Path
+
+try:
+    from PIL import Image
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
+
+
+class ImageGroup:
+    """A virtual target: a set of loose image files combined into one document."""
+    def __init__(self, images, name):
+        self.images = images
+        self.name = name
+        self.stem = name
+
+    # Quack like a Path for the parts of the pipeline that inspect targets.
+    suffix = ''
+
+    def is_file(self):
+        return False
+
+    def is_dir(self):
+        return False
 
 
 class OptimizedMediaConverter:
@@ -32,17 +56,21 @@ class OptimizedMediaConverter:
     def find_comics(self, source_paths, cancel_check=None):
         """Scans a list of paths (files or directories) and returns a list of targets."""
         targets = set()  # Use set to avoid duplicates
-        
+        loose_images = {}  # parent dir -> list of loose image files, grouped into one doc each
+
         for path_str in source_paths:
             if cancel_check and cancel_check():
                 raise InterruptedError("Операция прервана")
             source = Path(path_str)
             if not source.exists():
                 continue
-                
+
             if source.is_file():
-                if source.suffix.lower() in ('.zip', '.cbz', '.pdf'):
+                ext = source.suffix.lower()
+                if ext in ('.zip', '.cbz', '.pdf'):
                     targets.add(source)
+                elif ext in self.valid_extensions:
+                    loose_images.setdefault(source.parent, []).append(source)
             elif source.is_dir():
                 for root, dirs, files in os.walk(source):
                     if cancel_check and cancel_check():
@@ -59,12 +87,21 @@ class OptimizedMediaConverter:
                     if has_images:
                         targets.add(Path(root))
                             
-        # Sort targets by name or absolute path for consistent ordering
+        # Turn each group of loose images into one virtual target named after its folder.
+        for parent, imgs in loose_images.items():
+            imgs.sort(key=lambda x: self._natural_sort_key(x.name))
+            targets.add(ImageGroup(imgs, parent.name or "Images"))
+
+        # Sort targets by name for consistent ordering
         sorted_targets = list(targets)
         sorted_targets.sort(key=lambda x: self._natural_sort_key(x.name))
         return sorted_targets
 
     def extract_and_prepare(self, source_path, cancel_check=None):
+        if isinstance(source_path, ImageGroup):
+            # Loose images are already on disk; just hand back the (sorted) list.
+            return list(source_path.images), None
+
         source = Path(source_path)
         if source.suffix.lower() in ('.zip', '.cbz'):
             temp_extract = Path(tempfile.mkdtemp(prefix=f"comiconv_{source.stem}_"))
@@ -161,6 +198,28 @@ class OptimizedMediaConverter:
 
         return out_path
 
+    @staticmethod
+    def _image_to_pdf_bytes(img_path):
+        """Return a one-page PDF for an image.
+
+        PyMuPDF only decodes png/jpeg/pnm/psd/ps, so formats like webp, gif,
+        bmp and tiff are re-encoded to PNG via Pillow first.
+        """
+        try:
+            with fitz.open(img_path) as img_doc:
+                return img_doc.convert_to_pdf()
+        except Exception:
+            if not _HAS_PIL:
+                raise
+            # Fall back to Pillow for formats MuPDF can't read.
+            with Image.open(img_path) as im:
+                if im.mode in ("RGBA", "P", "LA"):
+                    im = im.convert("RGB")
+                buf = io.BytesIO()
+                im.save(buf, format="PNG")
+            with fitz.open("png", buf.getvalue()) as img_doc:
+                return img_doc.convert_to_pdf()
+
     def to_pdf(self, images_paths, filename, output_dir, cancel_check=None):
         if not images_paths:
             raise FileNotFoundError("Изображения не найдены.")
@@ -173,8 +232,7 @@ class OptimizedMediaConverter:
                     if cancel_check and cancel_check():
                         raise InterruptedError("Операция прервана")
                     try:
-                        with fitz.open(img_path) as img_doc:
-                            pdf_bytes = img_doc.convert_to_pdf()
+                        pdf_bytes = self._image_to_pdf_bytes(img_path)
                         with fitz.open("pdf", pdf_bytes) as page_doc:
                             doc.insert_pdf(page_doc)
                     except Exception:

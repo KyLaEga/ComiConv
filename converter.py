@@ -104,14 +104,17 @@ class OptimizedMediaConverter:
 
         source = Path(source_path)
         if source.suffix.lower() in ('.zip', '.cbz'):
-            temp_extract = Path(tempfile.mkdtemp(prefix=f"comiconv_{source.stem}_"))
+            # Resolve the base too: on macOS TMPDIR is a symlink (/var -> /private/var),
+            # so comparing a resolved member path against an unresolved base wrongly
+            # rejected every entry (Zip Slip false positive -> 0 files extracted).
+            temp_extract = Path(tempfile.mkdtemp(prefix=f"comiconv_{source.stem}_")).resolve()
             try:
                 with zipfile.ZipFile(source, 'r') as zip_ref:
                     infolist = zip_ref.infolist()
                     for member in infolist:
                         if cancel_check and cancel_check():
                             raise InterruptedError("Операция прервана")
-                        
+
                         # Secure extraction to prevent Zip Slip (Directory Traversal)
                         target_path = (temp_extract / member.filename).resolve()
                         try:

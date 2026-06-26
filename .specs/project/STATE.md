@@ -17,8 +17,12 @@
 - T4 done: `modules/{archive_io,pdf_io,image_io}.py` decoders, golden parity.
 - T5 done: encoders + `core/graph.py` adapter graph (PDF<->images edges).
 - T8 seeded: `core/loader.py` base-module loading.
-- 34 tests pass. NOT yet started: T6 (profile), T7 (capabilities manifest),
-  T9 (wire main.py/UI to registry — the integration step), T10 (sample-format proof), mobile mirror.
+- T6 done: `core/profile.py`. T7 done: `core/capabilities.py`.
+- T9 done: `converter.py` rewritten as an orchestration shim over the registry;
+  UI (`main.py`) untouched, golden parity holds, end-to-end smoke passes.
+- T10 done: `modules/tar_io.py` proves a new format plugs in with ZERO core edits.
+- 44 tests pass. REMAINING: wire UI format list to capability manifest (deferred, low value
+  now — 3 static formats all writable everywhere); T8 build-exclusion smoke test; mobile mirror.
 
 ## Blockers
 - (none yet)

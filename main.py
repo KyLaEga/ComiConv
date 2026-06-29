@@ -19,20 +19,23 @@ class ConversionWorker(QThread):
     done = Signal()  # renamed to avoid shadowing QThread.finished
     error = Signal(str)
 
-    def __init__(self, source_paths, cbz_out, pdf_out, zip_out, make_cbz, make_pdf, make_zip, lang):
+    def __init__(self, source_paths, cbz_out, pdf_out, zip_out, folder_out, make_cbz, make_pdf, make_zip, make_folder, lang):
         super().__init__()
         self.source_paths = source_paths
         self.cbz_out = cbz_out
         self.pdf_out = pdf_out
         self.zip_out = zip_out
+        self.folder_out = folder_out
         self.make_cbz = make_cbz
         self.make_pdf = make_pdf
         self.make_zip = make_zip
+        self.make_folder = make_folder
         self.lang = lang
         self.tr = TRANSLATIONS[lang]
         self.converter = OptimizedMediaConverter()
 
     def run(self):
+        deferred_cleanups = []
         try:
             self.log.emit(self.tr["status_scan"])
             targets = self.converter.find_comics(self.source_paths, cancel_check=self.isInterruptionRequested)
@@ -50,27 +53,46 @@ class ConversionWorker(QThread):
                     break
 
                 temp_dir = None
+                has_inner = False
                 try:
-                    self.log.emit(self.tr["status_processing"].format(current=i+1, total=total, name=target.name))
+                    self.log.emit(self.tr["status_processing"].format(current=i+1, total=total, name=target.name if not isinstance(target, Path) else target.name))
 
-                    is_pdf_source = target.is_file() and target.suffix.lower() == '.pdf'
-                    # Only a real .cbz is already in target format; a .zip of images
-                    # is still worth repackaging into .cbz.
-                    is_cbz_source = target.is_file() and target.suffix.lower() == '.cbz'
-                    is_zip_source = target.is_file() and target.suffix.lower() == '.zip'
+                    is_pdf_source = target.is_file() and target.suffix.lower() == '.pdf' if isinstance(target, Path) else False
+                    is_cbz_source = target.is_file() and target.suffix.lower() == '.cbz' if isinstance(target, Path) else False
+                    is_zip_source = target.is_file() and target.suffix.lower() == '.zip' if isinstance(target, Path) else False
 
-                    needs_cbz = self.make_cbz and self.cbz_out and not is_cbz_source
-                    needs_pdf = self.make_pdf and self.pdf_out and not is_pdf_source
-                    needs_zip = self.make_zip and self.zip_out and not is_zip_source
+                    is_temp_source = False
+                    if isinstance(target, Path):
+                        for d in deferred_cleanups:
+                            if target.is_relative_to(d):
+                                is_temp_source = True
+                                break
 
-                    if not needs_cbz and not needs_pdf and not needs_zip:
-                        self.log.emit(self.tr["status_skip_all_same"].format(name=target.name))
+                    needs_cbz = self.make_cbz and self.cbz_out and (not is_cbz_source or is_temp_source)
+                    needs_pdf = self.make_pdf and self.pdf_out and (not is_pdf_source or is_temp_source)
+                    needs_zip = self.make_zip and self.zip_out and (not is_zip_source or is_temp_source)
+                    needs_folder = self.make_folder and self.folder_out
+
+                    if not needs_cbz and not needs_pdf and not needs_zip and not needs_folder:
+                        self.log.emit(self.tr["status_skip_all_same"].format(name=target.name if not isinstance(target, Path) else target.name))
                         continue
 
                     try:
                         images, temp_dir = self.converter.extract_and_prepare(target, cancel_check=self.isInterruptionRequested)
+                        
+                        if temp_dir:
+                            inner_archives = [p for p in Path(temp_dir).rglob("*") if p.is_file() and p.suffix.lower() in ('.zip', '.cbz', '.pdf')]
+                            if inner_archives:
+                                targets.extend(inner_archives)
+                                total = len(targets)
+                                deferred_cleanups.append(Path(temp_dir))
+                                has_inner = True
+                                self.log.emit(f"Найдены вложенные архивы ({len(inner_archives)} шт.), добавлены в очередь.")
+                                temp_dir = None  # Prevent cleanup in finally
+                                
                         if not images:
-                            self.log.emit(self.tr["status_skip"].format(name=target.name))
+                            if not has_inner:
+                                self.log.emit(self.tr["status_skip"].format(name=target.name if not isinstance(target, Path) else target.name))
                             continue
 
                         filename = target.stem if target.is_file() else target.name
@@ -93,13 +115,18 @@ class ConversionWorker(QThread):
                             zip_path = self.converter.to_zip(images, filename, self.zip_out, base_dir=base, cancel_check=self.isInterruptionRequested)
                             self.log.emit(self.tr["status_success_zip"].format(name=zip_path.name))
                         elif self.make_zip and self.zip_out:
-                            self.log.emit(self.tr["status_skip_format"].format(fmt="ZIP", name=target.name))
+                            self.log.emit(self.tr["status_skip_format"].format(fmt="ZIP", name=target.name if not isinstance(target, Path) else target.name))
+
+                        if needs_folder:
+                            base = temp_dir if temp_dir else (target if isinstance(target, Path) else None)
+                            folder_path = self.converter.to_folder(images, filename, self.folder_out, base_dir=base, cancel_check=self.isInterruptionRequested)
+                            self.log.emit(self.tr["status_success_folder"].format(name=folder_path.name))
 
                     except InterruptedError:
                         self.log.emit(self.tr["status_interrupted"])
                         break
                     except Exception as e:
-                        self.log.emit(self.tr["status_error_target"].format(name=target.name, error=str(e)))
+                        self.log.emit(self.tr["status_error_target"].format(name=target.name if not isinstance(target, Path) else target.name, error=str(e)))
                     finally:
                         self.converter.cleanup(temp_dir)
                 finally:
@@ -115,6 +142,9 @@ class ConversionWorker(QThread):
             self.done.emit()
         except Exception as e:
             self.error.emit(str(e))
+        finally:
+            for d in deferred_cleanups:
+                self.converter.cleanup(d)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -202,9 +232,12 @@ class MainWindow(QMainWindow):
         self.chk_pdf.setChecked(True)
         self.chk_zip = QCheckBox()
         self.chk_zip.setChecked(False)
+        self.chk_folder = QCheckBox()
+        self.chk_folder.setChecked(False)
         formats_layout.addWidget(self.chk_cbz)
         formats_layout.addWidget(self.chk_pdf)
         formats_layout.addWidget(self.chk_zip)
+        formats_layout.addWidget(self.chk_folder)
         formats_layout.addStretch()
         layout.addLayout(formats_layout)
 
@@ -212,9 +245,11 @@ class MainWindow(QMainWindow):
         self.cbz_picker, self.cbz_lbl, self.input_cbz, self.btn_cbz_browse = self._create_folder_picker()
         self.pdf_picker, self.pdf_lbl, self.input_pdf, self.btn_pdf_browse = self._create_folder_picker()
         self.zip_picker, self.zip_lbl, self.input_zip, self.btn_zip_browse = self._create_folder_picker()
+        self.folder_picker, self.folder_lbl, self.input_folder, self.btn_folder_browse = self._create_folder_picker()
         layout.addWidget(self.cbz_picker)
         layout.addWidget(self.pdf_picker)
         layout.addWidget(self.zip_picker)
+        layout.addWidget(self.folder_picker)
         
         # Start Button
         self.btn_start = QPushButton()
@@ -240,6 +275,7 @@ class MainWindow(QMainWindow):
         self.chk_cbz.stateChanged.connect(self._toggle_pickers)
         self.chk_pdf.stateChanged.connect(self._toggle_pickers)
         self.chk_zip.stateChanged.connect(self._toggle_pickers)
+        self.chk_folder.stateChanged.connect(self._toggle_pickers)
 
         self.worker = None
         self._apply_translations()
@@ -257,12 +293,15 @@ class MainWindow(QMainWindow):
         self.chk_cbz.setText(self.tr["chk_cbz"])
         self.chk_pdf.setText(self.tr["chk_pdf"])
         self.chk_zip.setText(self.tr["chk_zip"])
+        self.chk_folder.setText(self.tr["chk_folder"])
         self.cbz_lbl.setText(self.tr["cbz_out_label"])
         self.pdf_lbl.setText(self.tr["pdf_out_label"])
         self.zip_lbl.setText(self.tr["zip_out_label"])
+        self.folder_lbl.setText(self.tr["folder_out_label"])
         self.input_cbz.setPlaceholderText(self.tr["placeholder_folder"])
         self.input_pdf.setPlaceholderText(self.tr["placeholder_folder"])
         self.input_zip.setPlaceholderText(self.tr["placeholder_folder"])
+        self.input_folder.setPlaceholderText(self.tr["placeholder_folder"])
         if self.worker is not None and self.worker.isRunning():
             self.btn_start.setText(self.tr["btn_cancel"])
         else:
@@ -286,6 +325,8 @@ class MainWindow(QMainWindow):
         color = ThemeManager.colors()["text"]
         self.btn_cbz_browse.setIcon(ThemeManager.make_icon("folder", color))
         self.btn_pdf_browse.setIcon(ThemeManager.make_icon("folder", color))
+        self.btn_zip_browse.setIcon(ThemeManager.make_icon("folder", color))
+        self.btn_folder_browse.setIcon(ThemeManager.make_icon("folder", color))
         self.btn_help.setIcon(ThemeManager.make_icon("info", color))
 
     def _show_help(self):
@@ -355,11 +396,12 @@ class MainWindow(QMainWindow):
         self.cbz_picker.setVisible(self.chk_cbz.isChecked())
         self.pdf_picker.setVisible(self.chk_pdf.isChecked())
         self.zip_picker.setVisible(self.chk_zip.isChecked())
+        self.folder_picker.setVisible(self.chk_folder.isChecked())
         # While a conversion runs the button acts as "Cancel" — never disable it here,
         # otherwise unchecking every format would make the run impossible to cancel.
         if self.worker is None or not self.worker.isRunning():
             self.btn_start.setEnabled(
-                self.chk_cbz.isChecked() or self.chk_pdf.isChecked() or self.chk_zip.isChecked()
+                self.chk_cbz.isChecked() or self.chk_pdf.isChecked() or self.chk_zip.isChecked() or self.chk_folder.isChecked()
             )
 
     def append_log(self, text):
@@ -382,10 +424,12 @@ class MainWindow(QMainWindow):
         cbz_out = self.input_cbz.text()
         pdf_out = self.input_pdf.text()
         zip_out = self.input_zip.text()
+        folder_out = self.input_folder.text()
 
         make_cbz = self.chk_cbz.isChecked()
         make_pdf = self.chk_pdf.isChecked()
         make_zip = self.chk_zip.isChecked()
+        make_folder = self.chk_folder.isChecked()
 
         if not source_paths:
             QMessageBox.warning(self, self.tr["msg_error"], self.tr["msg_select_source"])
@@ -403,6 +447,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, self.tr["msg_error"], self.tr["msg_select_zip"])
             return
 
+        if make_folder and not folder_out:
+            QMessageBox.warning(self, self.tr["msg_error"], self.tr["msg_select_folder"])
+            return
+
         self.btn_start.setText(self.tr["btn_cancel"])
         self.btn_start.setObjectName("secondary")
         self.btn_start.style().unpolish(self.btn_start)
@@ -411,7 +459,7 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(0)
         self.log_list.clear()
 
-        self.worker = ConversionWorker(source_paths, cbz_out, pdf_out, zip_out, make_cbz, make_pdf, make_zip, self.lang)
+        self.worker = ConversionWorker(source_paths, cbz_out, pdf_out, zip_out, folder_out, make_cbz, make_pdf, make_zip, make_folder, self.lang)
         self.worker.log.connect(self.append_log)
         self.worker.progress.connect(self.progress_bar.setValue)
         self.worker.error.connect(self.handle_error)
@@ -423,7 +471,7 @@ class MainWindow(QMainWindow):
         self.btn_start.setObjectName("primary")
         # Re-enable according to the selected formats (avoid isRunning() race here).
         self.btn_start.setEnabled(
-            self.chk_cbz.isChecked() or self.chk_pdf.isChecked() or self.chk_zip.isChecked()
+            self.chk_cbz.isChecked() or self.chk_pdf.isChecked() or self.chk_zip.isChecked() or self.chk_folder.isChecked()
         )
         self.btn_start.style().unpolish(self.btn_start)
         self.btn_start.style().polish(self.btn_start)

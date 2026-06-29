@@ -136,3 +136,6 @@ class OptimizedMediaConverter:
     def to_pdf(self, images_paths, filename, output_dir, cancel_check=None):
         return self._encode("pdf", images_paths, filename, output_dir,
                             cancel_check=cancel_check)
+
+    def to_folder(self, images, filename, output_dir, base_dir=None, cancel_check=None):
+        return self._encode("folder", images, filename, output_dir, base_dir, cancel_check)
